@@ -1,17 +1,16 @@
 using JwtAuthDemo.Data;
+using JwtAuthDemo.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using JwtAuthDemo.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-
-
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddMvc(option => option.EnableEndpointRouting = false);
-builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
+
 builder.Services.AddNpgsql<ApplicationDbContext>("Host=localhost;Port=5432;Database=jwtauthdb;Username=postgres;Password=CAMRENISREAL");
+
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -31,17 +30,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+
+builder.Services.AddSession();
+
 var app = builder.Build();
 
-app.UseMvc(routes =>
-        {
-            routes.MapRoute(
-                name: "default",
-                template: "{controller=Home}/{action=Index}/{id?}");
-        });
-app.UseAuthentication();
-app.UseAuthorization(); 
-app.MapControllers();
 
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+
+app.UseSession();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();

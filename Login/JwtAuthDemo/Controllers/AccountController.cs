@@ -11,7 +11,6 @@ namespace JwtAuthDemo.Controllers
     public class AccountController : Controller
     {
         private readonly ApplicationDbContext _context;
-
         private readonly JwtService _jwtService;
 
         public AccountController(ApplicationDbContext context, JwtService jwtService)
@@ -51,14 +50,10 @@ namespace JwtAuthDemo.Controllers
                 return Unauthorized("Invalid credentials.");
 
             var token = _jwtService.GenerateToken(user.Username);
-            Response.Cookies.Append("AuthToken", token, new CookieOptions 
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict
-            });
 
-            return Redirect("/Home");
+            HttpContext.Session.SetString("AuthToken", token);
+
+            return RedirectToAction("Index", "Home");
         }
 
         private string HashPassword(string password)

@@ -11,11 +11,11 @@
                     <form method="post">
                         <div class="mb-3">
                             <label class="form-label">Username:</label>
-                            <input type="text" name="username" class="form-control" required />
+                            <input type="text" name="username" class="form-control transparent-input" required />
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Password:</label>
-                            <input type="password" name="password" class="form-control" required />
+                            <input type="password" name="password" class="form-control transparent-input" required />
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Login</button>
                     </form>
@@ -27,3 +27,15 @@
         </div>
     </div>
 </div>
+
+<style>
+    .transparent-input {
+        background: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #000;
+    }
+
+    .transparent-input::placeholder {
+        color: rgba(0, 0, 0, 0.5);
+    }
+</style>

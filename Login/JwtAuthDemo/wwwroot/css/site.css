@@ -21,6 +21,11 @@ body {
   margin-bottom: 60px;
 }
 
+body {
+  background-color: black !important;
+  color: white; /* Ensure text is readable */
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
@@ -28,4 +33,20 @@ body {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+.card {
+  background-color: #1a1a1a; /* Dark gray for contrast */
+  color: white; 
+}
+
+/* Transparent input styling */
+.transparent-input {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+.transparent-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }

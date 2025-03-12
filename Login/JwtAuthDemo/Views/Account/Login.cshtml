@@ -9,18 +9,26 @@
                 <div class="card-body">
                     <h2 class="text-center">Login</h2>
                     <form method="post">
+
+                        <!-- Username Input -->
                         <div class="mb-3">
                             <label class="form-label">Username:</label>
-                            <input type="text" name="username" class="form-control transparent-input" required />
+                            <input type="text" name="username" class="form-control transparent-input" placeholder="Enter username" required />
                         </div>
+
+                        <!-- Password Input -->
                         <div class="mb-3">
                             <label class="form-label">Password:</label>
-                            <input type="password" name="password" class="form-control transparent-input" required />
+                            <input type="password" name="password" class="form-control transparent-input" placeholder="Enter password" required />
                         </div>
+
+                        <!-- Submit Button -->
                         <button type="submit" class="btn btn-primary w-100">Login</button>
                     </form>
+
+                    <!-- Link to Register -->
                     <p class="mt-3 text-center">
-                        Don't have an account? <a href="/Account/Register">Register</a>
+                        Don't have an account? <a href="/Account/Register" class="text-white">Register</a>
                     </p>
                 </div>
             </div>
@@ -28,14 +36,53 @@
     </div>
 </div>
 
+<!-- Improved Input Styles -->
 <style>
+    /* Transparent input styling */
     .transparent-input {
-        background: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #000;
+        background: rgba(255, 255, 255, 0.1); /* Light transparent white */
+        border: 1px solid rgba(255, 255, 255, 0.5); /* White border */
+        color: white !important; /* Force input text to be white */
+        outline: none; /* Remove input outline */
+        caret-color: white; /* White cursor */
+        -webkit-text-fill-color: white !important; /* Override autofill styles */
     }
 
+    /* Placeholder styling */
     .transparent-input::placeholder {
-        color: rgba(0, 0, 0, 0.5);
+        color: rgba(255, 255, 255, 0.7); /* Light white placeholder */
+    }
+
+    /* On focus - slightly brighter */
+    .transparent-input:focus {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: white;
+        color: white !important; /* Ensure white text during focus */
+        -webkit-text-fill-color: white !important; /* Override autofill focus styles */
+    }
+
+    /* Autofill override for Chrome/Safari/Edge */
+    input:-webkit-autofill,
+    input:-webkit-autofill:focus {
+        box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.1) inset;
+        -webkit-text-fill-color: white !important; /* Force white text */
+        color: white !important;
+        caret-color: white;
+    }
+
+    /* Ensure page background is dark */
+    body {
+        background-color: black;
+        color: white; /* White text throughout */
+    }
+
+    /* Card styling for better contrast */
+    .card {
+        background-color: #1a1a1a; /* Dark gray background for cards */
+    }
+
+    /* Ensure all input fields in form-control follow the rules */
+    .form-control {
+        color: white !important; /* Force white text globally */
     }
 </style>

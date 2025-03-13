@@ -1,48 +1,73 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using JwtAuthDemo.Data;
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
-
-namespace JwtAuthDemo.Services
+namespace JwtAuthDemo.Controllers
 {
-    public class JwtService
+    public class AccountController : Controller
     {
-        private readonly IConfiguration _config;
+        private readonly ApplicationDbContext _context;
+        private readonly JwtService _jwtService;
 
-        public JwtService(IConfiguration config)
+        public AccountController(ApplicationDbContext context, JwtService jwtService)
         {
-            _config = config;
+            _context = context;
+            _jwtService = jwtService;
         }
 
-        public string GenerateToken(string username)
-{
+        [HttpGet]
+        public IActionResult Register() => View();
 
-    var jwtKey = _config["JwtSettings:Key"];
-    if (string.IsNullOrEmpty(jwtKey))
-    {
-        throw new InvalidOperationException("JWT Key is missing from configuration.");
-    }
+        [HttpPost]
+        public async Task<IActionResult> Register(string username, string password)
+        {
+            var userExists = await _context.Users.AnyAsync(u => u.Username == username);
+            if (userExists) return BadRequest("User already exists.");
 
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var user = new User
+            {
+                Username = username,
+                PasswordHash = HashPassword(password)
+            };
 
-    var claims = new[]
-    {
-        new Claim(JwtRegisteredClaimNames.Sub, username),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Login");
+        }
 
-    var token = new JwtSecurityToken(
-        issuer: _config["JwtSettings:Issuer"],
-        audience: _config["JwtSettings:Audience"],
-        claims: claims,
-        expires: DateTime.UtcNow.AddHours(2),
-        signingCredentials: creds
-    );
+        [HttpGet]
+        public IActionResult Login() => View();
 
-    return new JwtSecurityTokenHandler().WriteToken(token);
-}
+        [HttpPost]
+        public async Task<IActionResult> Login(string username, string password)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null || user.PasswordHash != HashPassword(password))
+                return Unauthorized("Invalid credentials.");
 
+            var token = _jwtService.GenerateToken(user.Username);
+
+            HttpContext.Session.SetString("AuthToken", token);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Remove("AuthToken");
+
+                return RedirectToAction("Login");
+        }
+        private string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(bytes);
+        }
     }
 }

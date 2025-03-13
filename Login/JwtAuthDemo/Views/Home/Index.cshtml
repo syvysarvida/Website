@@ -1,8 +1,28 @@
-﻿@{
+@{
     ViewData["Title"] = "Home Page";
 }
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+    <form method="post" action="/Account/Logout">
+        <button type="submit" class="btn btn-danger mt-4">Logout</button>
+    </form>
 </div>
+
+<style>
+    body {
+        background-color: black;
+        color: white;
+    }
+
+    h1, p {
+        margin-bottom: 20px;
+    }
+
+    .btn-danger{
+        padding: 10px 20px;
+        font-size: 18px;
+    }
+</style>

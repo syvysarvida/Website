@@ -3,12 +3,24 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+    @if (!string.IsNullOrEmpty(ViewBag.Username))
+    {
+        <h1 class="display-4">Welcome, @ViewBag.Username!</h1>
+    }
+    else
+    {
+        <h1 class="display-4">Welcome!</h1>
+    }
+
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 
-    <form method="post" action="/Account/Logout">
-        <button type="submit" class="btn btn-danger mt-4">Logout</button>
-    </form>
+    <!-- Show Logout Button Only If Logged In -->
+    @if (!string.IsNullOrEmpty(ViewBag.Username))
+    {
+        <form method="post" action="/Account/Logout">
+            <button type="submit" class="btn btn-danger mt-4">Logout</button>
+        </form>
+    }
 </div>
 
 <style>
@@ -21,7 +33,7 @@
         margin-bottom: 20px;
     }
 
-    .btn-danger{
+    .btn-danger {
         padding: 10px 20px;
         font-size: 18px;
     }

@@ -45,13 +45,17 @@ namespace JwtAuthDemo.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
         {
+            // Find user by username
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null || user.PasswordHash != HashPassword(password))
                 return Unauthorized("Invalid credentials.");
 
+            // Generate JWT token
             var token = _jwtService.GenerateToken(user.Username);
 
+            // Store token and username in the session
             HttpContext.Session.SetString("AuthToken", token);
+            HttpContext.Session.SetString("Username", user.Username);
 
             return RedirectToAction("Index", "Home");
         }
@@ -59,10 +63,12 @@ namespace JwtAuthDemo.Controllers
         [HttpPost]
         public IActionResult Logout()
         {
-            HttpContext.Session.Remove("AuthToken");
+            // Clear the session (token and username)
+            HttpContext.Session.Clear();
 
-                return RedirectToAction("Login");
+            return RedirectToAction("Login");
         }
+
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();

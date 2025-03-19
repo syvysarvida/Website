@@ -43,22 +43,32 @@ namespace JwtAuthDemo.Controllers
         public IActionResult Login() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login(string username, string password, bool rememberMe)
         {
-            // Find user by username
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null || user.PasswordHash != HashPassword(password))
                 return Unauthorized("Invalid credentials.");
 
-            // Generate JWT token
             var token = _jwtService.GenerateToken(user.Username);
 
-            // Store token and username in the session
             HttpContext.Session.SetString("AuthToken", token);
             HttpContext.Session.SetString("Username", user.Username);
 
+            // Store RememberMe flag in session
+            if (rememberMe)
+            {
+                HttpContext.Session.SetInt32("RememberMe", 1);
+                HttpContext.Session.SetString("SessionTimeout", "7Days");
+            }
+            else
+            {
+                HttpContext.Session.SetInt32("RememberMe", 0);
+                HttpContext.Session.SetString("SessionTimeout", "30Minutes");
+            }
+
             return RedirectToAction("Index", "Home");
         }
+
 
         [HttpPost]
         public IActionResult Logout()

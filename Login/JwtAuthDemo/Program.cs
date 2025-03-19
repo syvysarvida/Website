@@ -1,7 +1,6 @@
 using JwtAuthDemo.Data;
 using JwtAuthDemo.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -27,29 +26,44 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-
 builder.Services.AddAuthorization();
 
-
-builder.Services.AddSession();
+// ✅ Configure session properly
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Default session timeout
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
-
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 
+// ✅ Ensure Session is Available
+app.UseSession();
+
+// ✅ Ensure this Middleware Runs Before Authentication
+app.Use(async (context, next) =>
+{
+    var sessionTimeout = context.Session.GetString("SessionTimeout");
+
+    if (!string.IsNullOrEmpty(sessionTimeout) && sessionTimeout == "7Days")
+    {
+        context.Session.SetString("CustomTimeout", "7Days");
+    }
+
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
-
-
-app.UseSession();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+app.Run();  // ✅ Now at the correct position

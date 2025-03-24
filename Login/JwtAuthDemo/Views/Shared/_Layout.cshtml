@@ -11,74 +11,242 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
     <style>
-        /* Custom Styling */
-        body {
+        /* Full-page layout */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
             background-color: black;
             color: white;
+            display: flex;
+            flex-direction: column;
         }
 
-        .navbar {
-            background-color: #222 !important;
+        /* Wrapper to push footer to bottom */
+        .wrapper {
+            flex: 1;
+            display: flex;
         }
 
-        .navbar a {
-            color: white !important;
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: #222;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 20px;
+            transform: translateX(0);
+            transition: transform 0.3s ease-in-out;
         }
 
-        .btn-danger {
-            padding: 5px 10px;
-            font-size: 14px;
+        /* Sidebar title */
+        .sidebar .title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        /* Sidebar links */
+        .sidebar a {
+            display: block;
+            padding: 10px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            transition: background 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #444;
+        }
+
+        /* Dropdown Menu */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            left: 0;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        .dropdown-menu a {
+            padding: 10px;
+            display: block;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: #555;
+        }
+
+        .dropdown.active .dropdown-menu {
+            display: flex;
+        }
+
+        /* Logout button */
+        .sidebar .logout-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: red;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            transition: background 0.3s;
+        }
+
+        .sidebar .logout-btn:hover {
+            background-color: darkred;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            transition: margin-left 0.3s ease-in-out;
+            width: calc(100% - 250px);
+        }
+
+        /* Menu button */
+        .menu-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Footer styling */
+        .footer {
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            background-color: #222;
         }
     </style>
 </head>
 
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">JwtAuthDemo</a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-                aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    @{
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        bool isAuthPage = currentController == "Account" && (currentAction == "Login" || currentAction == "Register");
+    }
 
-            <div class="collapse navbar-collapse" id="navbarContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                    </li>
-                </ul>
+    @if (!isAuthPage)
+    {
+        <!-- Sidebar (Hidden only on Login/Register pages) -->
+        <div class="sidebar" id="sidebar">
+            <div class="title">JwtAuthDemo</div>
+            <a href="/">Home</a>
+            <a href="/Home/About">About</a>
 
-                <!-- Logout Button (Sidebar Only) -->
-                @if (!string.IsNullOrEmpty(Context.Session.GetString("Username")))
-                {
-                    <form method="post" action="/Account/Logout" class="d-inline">
-                        <button type="submit" class="btn btn-danger btn-sm">Logout</button>
-                    </form>
-                }
+            <!-- Transaction Dropdown -->
+            <div class="dropdown">
+                <a href="#" class="dropdown-toggle" onclick="toggleDropdown()">Transaction</a>
+                <div class="dropdown-menu" id="transactionMenu">
+                    <a href="/Transaction/Transaction1">Transaction 1</a>
+                    <a href="/Transaction/Transaction2">Transaction 2</a>
+                    <a href="/Transaction/Transaction3">Transaction 3</a>
+                </div>
             </div>
-        </div>
-    </nav>
 
-    <!-- Main Content -->
-    <div class="container mt-4">
-        @RenderBody()
+            <a href="/Home/Privacy">Privacy</a>
+
+            <!-- Logout Button -->
+            @if (!string.IsNullOrEmpty(Context.Session.GetString("Username")))
+            {
+                <form method="post" action="/Account/Logout">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            }
+        </div>
+
+        <!-- Menu Button (Visible on smaller screens) -->
+        <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+    }
+
+    <!-- Main Wrapper -->
+    <div class="wrapper">
+        <div class="content @(isAuthPage ? "" : "with-sidebar")" id="content">
+            @RenderBody()
+        </div>
     </div>
 
     <!-- Footer -->
-    <footer class="footer border-top mt-5">
-        <div class="container text-center">
-            &copy; 2025 - JwtAuthDemo - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="footer">
+        <div class="container">
+            &copy; 2025 - JwtAuthDemo - <a href="/Home/Privacy" class="text-white">Privacy</a>
         </div>
     </footer>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        function checkWindowSize() {
+            var sidebar = document.getElementById("sidebar");
+            var content = document.getElementById("content");
+            var menuBtn = document.getElementById("menuBtn");
+
+            if (!sidebar) return; // If sidebar doesn't exist (Login/Register), exit function
+
+            if (window.innerWidth >= 1200) {
+                sidebar.style.transform = "translateX(0)";
+                content.style.marginLeft = "250px";
+                menuBtn.style.display = "none";
+            } else {
+                sidebar.style.transform = "translateX(-100%)";
+                content.style.marginLeft = "0";
+                menuBtn.style.display = "block";
+            }
+        }
+
+        function toggleSidebar() {
+            var sidebar = document.getElementById("sidebar");
+            var content = document.getElementById("content");
+
+            if (sidebar.style.transform === "translateX(0px)") {
+                sidebar.style.transform = "translateX(-100%)";
+                content.style.marginLeft = "0";
+            } else {
+                sidebar.style.transform = "translateX(0)";
+                content.style.marginLeft = "250px";
+            }
+        }
+
+        function toggleDropdown() {
+            var dropdown = document.querySelector('.dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        window.onload = checkWindowSize;
+        window.onresize = checkWindowSize;
+    </script>
 
 </body>
 

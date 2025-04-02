@@ -14,6 +14,7 @@
 
 <style>
     html, body {
+    font-family: Arial, sans-serif;
     height: 100%;
     margin: 0;
     padding: 0;
@@ -49,6 +50,7 @@
 }
 
 .sidebar a {
+    font-family: Arial, sans-serif;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -62,6 +64,10 @@
 
 .sidebar a:hover {
     background-color: #444;
+}
+
+.sidebar .title, .footer, .content {
+    font-family: Arial, sans-serif;
 }
 
 .dropdown {
@@ -164,6 +170,7 @@
 }
 
 .footer {
+    font-family: Arial, sans-serif;
     width: 100%;
     text-align: center;
     padding: 10px 0;
@@ -187,7 +194,8 @@
             <div class="title">JwtAuthDemo</div>
             <a href="/"><i class="fas fa-home"></i>Home</a>
             <a href="/Home/About"><i class="fas fa-info-circle"></i>About</a>
-
+            <a href="/Account/Profile"><i class="fas fa-user"></i>Profile</a>
+            
             <!-- Transaction Dropdown -->
             <div class="dropdown">
                 <a href="#" class="dropdown-toggle" onclick="toggleDropdown()"><i class="fas fa-exchange-alt"></i>Transaction</a>

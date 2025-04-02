@@ -8,8 +8,9 @@
             <div class="card shadow">
                 <div class="card-body">
                     <h2 class="text-center">Login</h2>
-                    <form method="post">
-
+                    
+                    <!-- Login Form -->
+                    <form id="login-form">
                         <!-- Username Input -->
                         <div class="mb-3">
                             <label class="form-label">Username:</label>
@@ -28,6 +29,9 @@
                             <label class="form-check-label" for="rememberMe">Remember Me</label>
                         </div>
 
+                        <!-- Error Message -->
+                        <p id="error-message" class="text-danger text-center" style="display: none;"></p>
+
                         <!-- Submit Button -->
                         <button type="submit" class="btn btn-primary w-100">Login</button>
                     </form>
@@ -42,53 +46,31 @@
     </div>
 </div>
 
-<!-- Improved Input Styles -->
-<style>
-    /* Transparent input styling */
-    .transparent-input {
-        background: rgba(255, 255, 255, 0.1); /* Light transparent white */
-        border: 1px solid rgba(255, 255, 255, 0.5); /* White border */
-        color: white !important; /* Force input text to be white */
-        outline: none; /* Remove input outline */
-        caret-color: white; /* White cursor */
-        -webkit-text-fill-color: white !important; /* Override autofill styles */
-    }
+<script>
+    document.getElementById("login-form").addEventListener("submit", async function (e) {
+        e.preventDefault(); // Prevent page reload
 
-    /* Placeholder styling */
-    .transparent-input::placeholder {
-        color: rgba(255, 255, 255, 0.7); /* Light white placeholder */
-    }
+        const formData = new FormData(this);
+        const errorMessage = document.getElementById("error-message");
 
-    /* On focus - slightly brighter */
-    .transparent-input:focus {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: white;
-        color: white !important; /* Ensure white text during focus */
-        -webkit-text-fill-color: white !important; /* Override autofill focus styles */
-    }
+        try {
+            const response = await fetch("/Account/Login", {
+                method: "POST",
+                body: formData,
+                headers: { "Accept": "application/json" } // Ensure JSON response
+            });
 
-    /* Autofill override for Chrome/Safari/Edge */
-    input:-webkit-autofill,
-    input:-webkit-autofill:focus {
-        box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.1) inset;
-        -webkit-text-fill-color: white !important; /* Force white text */
-        color: white !important;
-        caret-color: white;
-    }
+            const result = await response.json();
 
-    /* Ensure page background is dark */
-    body {
-        background-color: black;
-        color: white; /* White text throughout */
-    }
-
-    /* Card styling for better contrast */
-    .card {
-        background-color: #1a1a1a; /* Dark gray background for cards */
-    }
-
-    /* Ensure all input fields in form-control follow the rules */
-    .form-control {
-        color: white !important; /* Force white text globally */
-    }
-</style>
+            if (result.success) {
+                window.location.href = result.redirectUrl; // Redirect on success
+            } else {
+                errorMessage.textContent = result.message; // Show error message
+                errorMessage.style.display = "block";
+            }
+        } catch (error) {
+            errorMessage.textContent = "An error occurred. Please try again.";
+            errorMessage.style.display = "block";
+        }
+    });
+</script>

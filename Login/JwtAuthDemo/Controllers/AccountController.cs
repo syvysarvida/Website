@@ -29,20 +29,19 @@ namespace JwtAuthDemo.Controllers
             if (userExists) return BadRequest("User already exists.");
 
             var user = new User
-        {
-            Username = username,
-            PasswordHash = HashPassword(password),
-            FirstName = firstName,
-            LastName = lastName,
-            Address = address,
-            Phone = phone,
-        };
+            {
+                Username = username,
+                PasswordHash = HashPassword(password),
+                FirstName = firstName,
+                LastName = lastName,
+                Address = address,
+                Phone = phone,
+            };
 
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return RedirectToAction("Login");
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Login");
         }
-
 
         [HttpGet]
         public IActionResult Login() => View();
@@ -59,7 +58,6 @@ namespace JwtAuthDemo.Controllers
             HttpContext.Session.SetString("AuthToken", token);
             HttpContext.Session.SetString("Username", user.Username);
 
-            // Store RememberMe flag in session
             if (rememberMe)
             {
                 HttpContext.Session.SetInt32("RememberMe", 1);
@@ -78,7 +76,7 @@ namespace JwtAuthDemo.Controllers
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
             {
-            return RedirectToAction("Login", "Account");
+                return RedirectToAction("Login", "Account");
             }
 
             var user = _context.Users.FirstOrDefault(u => u.Username == HttpContext.Session.GetString("Username"));
@@ -90,16 +88,45 @@ namespace JwtAuthDemo.Controllers
                 HttpContext.Session.SetString("Phone", user.Phone);
             }
 
-        return View();
+            return View();
         }
 
-        
+        [HttpPost]
+        public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateModel model)
+        {
+            if (model == null)
+                return Json(new { success = false, message = "Invalid data." });
+
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrEmpty(username))
+                return Json(new { success = false, message = "User not authenticated." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+
+            // Update user data in database
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            user.Address = model.Address;
+            user.Phone = model.Phone;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // Update session data
+            HttpContext.Session.SetString("FirstName", model.FirstName);
+            HttpContext.Session.SetString("LastName", model.LastName);
+            HttpContext.Session.SetString("Address", model.Address);
+            HttpContext.Session.SetString("Phone", model.Phone);
+
+            return Json(new { success = true });
+        }
+
         [HttpPost]
         public IActionResult Logout()
         {
-            // Clear the session (token and username)
             HttpContext.Session.Clear();
-
             return RedirectToAction("Login");
         }
 
@@ -109,5 +136,13 @@ namespace JwtAuthDemo.Controllers
             var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
             return Convert.ToBase64String(bytes);
         }
+    }
+
+    public class ProfileUpdateModel
+    {
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
     }
 }

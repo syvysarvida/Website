@@ -69,7 +69,16 @@ namespace JwtAuthDemo.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        public IActionResult Profile()
+        {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
+            {
+            return RedirectToAction("Login", "Account");
+            }
 
+            return View();
+        }
+        
         [HttpPost]
         public IActionResult Logout()
         {

@@ -23,21 +23,26 @@ namespace JwtAuthDemo.Controllers
         public IActionResult Register() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Register(string username, string password)
+        public async Task<IActionResult> Register(string username, string password, string firstName, string lastName, string address, string phone, DateTime birthdate)
         {
             var userExists = await _context.Users.AnyAsync(u => u.Username == username);
             if (userExists) return BadRequest("User already exists.");
 
             var user = new User
-            {
-                Username = username,
-                PasswordHash = HashPassword(password)
-            };
+        {
+            Username = username,
+            PasswordHash = HashPassword(password),
+            FirstName = firstName,
+            LastName = lastName,
+            Address = address,
+            Phone = phone,
+        };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Login");
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Login");
         }
+
 
         [HttpGet]
         public IActionResult Login() => View();
@@ -76,8 +81,18 @@ namespace JwtAuthDemo.Controllers
             return RedirectToAction("Login", "Account");
             }
 
-            return View();
+            var user = _context.Users.FirstOrDefault(u => u.Username == HttpContext.Session.GetString("Username"));
+            if (user != null)
+            {
+                HttpContext.Session.SetString("FirstName", user.FirstName);
+                HttpContext.Session.SetString("LastName", user.LastName);
+                HttpContext.Session.SetString("Address", user.Address);
+                HttpContext.Session.SetString("Phone", user.Phone);
+            }
+
+        return View();
         }
+
         
         [HttpPost]
         public IActionResult Logout()

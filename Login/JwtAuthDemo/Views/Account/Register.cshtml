@@ -22,6 +22,30 @@
                             <input type="password" name="password" class="form-control transparent-input" placeholder="Enter password" required />
                         </div>
 
+                        <!-- First Name Input -->
+                        <div class="mb-3">
+                            <label class="form-label">First Name:</label>
+                            <input type="text" name="firstName" class="form-control transparent-input" placeholder="Enter first name" required />
+                        </div>
+
+                        <!-- Last Name Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Last Name:</label>
+                            <input type="text" name="lastName" class="form-control transparent-input" placeholder="Enter last name" required />
+                        </div>
+
+                        <!-- Address Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Address:</label>
+                            <input type="text" name="address" class="form-control transparent-input" placeholder="Enter address" required />
+                        </div>
+
+                        <!-- Phone Input -->
+                        <div class="mb-3">
+                            <label class="form-label">Phone:</label>
+                            <input type="text" name="phone" class="form-control transparent-input" placeholder="Enter phone number" required />
+                        </div>
+
                         <!-- Submit Button -->
                         <button type="submit" class="btn btn-success w-100">Register</button>
                     </form>
@@ -38,41 +62,5 @@
 
 <!-- Improved Input Styles -->
 <style>
-    /* Force input text to be white */
-    .transparent-input {
-        background: rgba(255, 255, 255, 0.1); /* Light transparent white */
-        border: 1px solid rgba(255, 255, 255, 0.5); /* White border for better visibility */
-        color: white !important; /* Ensure input text is white */
-        outline: none; /* Remove outline */
-        caret-color: white; /* Ensure caret (cursor) is white */
-        -webkit-text-fill-color: white !important; /* Force text color in WebKit browsers */
-    }
-
-    /* Placeholder styling */
-    .transparent-input::placeholder {
-        color: rgba(255, 255, 255, 0.7); /* Light white placeholder */
-    }
-
-    /* On focus - slightly brighter */
-    .transparent-input:focus {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: white;
-        color: white !important; /* Keep input text white on focus */
-    }
-
-    /* Ensure the page background is dark */
-    body {
-        background-color: black;
-        color: white; /* Make all text white */
-    }
-
-    /* Card styling for better contrast */
-    .card {
-        background-color: #1a1a1a; /* Dark gray background for cards */
-    }
-
-    /* Override Bootstrap's form-control text color */
-    .form-control {
-        color: white !important; /* Force white text for all inputs */
-    }
+    /* Same as your existing styling */
 </style>

@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<h2>Your Profile</h2>
+<div class="profile-container">
+    <div class="profile-info">
+        <p><strong>Username:</strong> @Context.Session.GetString("Username")</p>
+        <p><strong>Member Since:</strong> January 1, 2022</p> <!-- Placeholder, replace with actual date -->
+    </div>
+</div>
+
+<div class="actions">
+    <a href="/Account/UpdateProfile" class="btn btn-primary">Update Profile</a>
+</div>

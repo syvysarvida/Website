@@ -23,25 +23,32 @@ namespace JwtAuthDemo.Controllers
         public IActionResult Register() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Register(string username, string password, string firstName, string lastName, string address, string phone, DateTime birthdate)
-        {
-            var userExists = await _context.Users.AnyAsync(u => u.Username == username);
-            if (userExists) return BadRequest("User already exists.");
+        [HttpPost]
+public async Task<IActionResult> Register([FromBody] RegisterModel model)
+{
+    if (model == null)
+        return Json(new { success = false, message = "Invalid data provided." });
 
-            var user = new User
-            {
-                Username = username,
-                PasswordHash = HashPassword(password),
-                FirstName = firstName,
-                LastName = lastName,
-                Address = address,
-                Phone = phone,
-            };
+    var userExists = await _context.Users.AnyAsync(u => u.Username == model.Username);
+    if (userExists)
+        return Json(new { success = false, message = "Username already exists. Choose a different one." });
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Login");
-        }
+    var user = new User
+    {
+        Username = model.Username,
+        PasswordHash = HashPassword(model.Password),
+        FirstName = model.FirstName,
+        LastName = model.LastName,
+        Address = model.Address,
+        Phone = model.Phone
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    return Json(new { success = true });
+}
+
 
         [HttpGet]
         public IActionResult Login() => View();

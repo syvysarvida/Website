@@ -5,14 +5,39 @@
 <h2>Your Profile</h2>
 <div class="profile-container">
     <div class="profile-info">
-        <p><strong>Username:</strong> @Context.Session.GetString("Username")</p>
-        <p><strong>First Name:</strong> @Context.Session.GetString("FirstName")</p>
-        <p><strong>Last Name:</strong> @Context.Session.GetString("LastName")</p>
-        <p><strong>Address:</strong> @Context.Session.GetString("Address")</p>
-        <p><strong>Phone:</strong> @Context.Session.GetString("Phone")</p>
+        <p><strong>Username:</strong> <span id="profile-username">@Context.Session.GetString("Username")</span></p>
+        <p><strong>First Name:</strong> <span id="profile-firstname">@Context.Session.GetString("FirstName")</span></p>
+        <p><strong>Last Name:</strong> <span id="profile-lastname">@Context.Session.GetString("LastName")</span></p>
+        <p><strong>Address:</strong> <span id="profile-address">@Context.Session.GetString("Address")</span></p>
+        <p><strong>Phone:</strong> <span id="profile-phone">@Context.Session.GetString("Phone")</span></p>
     </div>
 </div>
 
 <div class="actions">
-    <a href="/Account/UpdateProfile" class="btn btn-primary">Update Profile</a>
+    <button class="btn btn-primary" onclick="openPopup()">Update Profile</button>
 </div>
+
+<!-- Pop-up Form -->
+<div id="popup-form" class="popup">
+    <div class="popup-content">
+        <h2>Update Profile</h2>
+        <label>First Name:</label>
+        <input type="text" id="new-firstname" placeholder="Enter new first name">
+        
+        <label>Last Name:</label>
+        <input type="text" id="new-lastname" placeholder="Enter new last name">
+        
+        <label>Address:</label>
+        <input type="text" id="new-address" placeholder="Enter new address">
+        
+        <label>Phone:</label>
+        <input type="text" id="new-phone" placeholder="Enter new phone">
+        
+        <button onclick="updateProfile()">Save Changes</button>
+        <button class="close-btn" onclick="closePopup()">Cancel</button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/profile.js"></script>
+}

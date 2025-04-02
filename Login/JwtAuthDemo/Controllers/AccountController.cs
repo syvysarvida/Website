@@ -54,30 +54,34 @@ public async Task<IActionResult> Register([FromBody] RegisterModel model)
         public IActionResult Login() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Login(string username, string password, bool rememberMe)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-            if (user == null || user.PasswordHash != HashPassword(password))
-                return Unauthorized("Invalid credentials.");
+public async Task<IActionResult> Login(string username, string password, bool rememberMe)
+{
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+    
+    if (user == null || user.PasswordHash != HashPassword(password))
+    {
+        return Json(new { success = false, message = "Wrong Username or Password" });
+    }
 
-            var token = _jwtService.GenerateToken(user.Username);
+    var token = _jwtService.GenerateToken(user.Username);
 
-            HttpContext.Session.SetString("AuthToken", token);
-            HttpContext.Session.SetString("Username", user.Username);
+    HttpContext.Session.SetString("AuthToken", token);
+    HttpContext.Session.SetString("Username", user.Username);
 
-            if (rememberMe)
-            {
-                HttpContext.Session.SetInt32("RememberMe", 1);
-                HttpContext.Session.SetString("SessionTimeout", "7Days");
-            }
-            else
-            {
-                HttpContext.Session.SetInt32("RememberMe", 0);
-                HttpContext.Session.SetString("SessionTimeout", "30Minutes");
-            }
+    if (rememberMe)
+    {
+        HttpContext.Session.SetInt32("RememberMe", 1);
+        HttpContext.Session.SetString("SessionTimeout", "7Days");
+    }
+    else
+    {
+        HttpContext.Session.SetInt32("RememberMe", 0);
+        HttpContext.Session.SetString("SessionTimeout", "30Minutes");
+    }
 
-            return RedirectToAction("Index", "Home");
-        }
+    return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
+}
+
 
         public IActionResult Profile()
         {

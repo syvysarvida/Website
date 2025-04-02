@@ -147,15 +147,20 @@
 .menu-btn {
     position: absolute;
     top: 15px;
-    left: 15px;
+    left: 10px;
     background: #333;
     color: white;
     border: none;
-    padding: 10px 15px;
+    padding: 10px;
     font-size: 18px;
     border-radius: 5px;
     cursor: pointer;
     display: none;
+    z-index: 1000;
+}
+
+#siteTitle {
+    margin-left: 50px;
 }
 
 .footer {
@@ -243,7 +248,7 @@
                 content.style.marginLeft = "250px";
                 menuBtn.style.display = "none";
             } else {
-                sidebar.style.transform = "translateX(-100%)";
+                sidebar.style.transform = "translateX(-250px)";
                 content.style.marginLeft = "0";
                 menuBtn.style.display = "block";
             }
@@ -254,7 +259,7 @@
             var content = document.getElementById("content");
 
             if (sidebar.style.transform === "translateX(0px)") {
-                sidebar.style.transform = "translateX(-100%)";
+                sidebar.style.transform = "translateX(-250px)";
                 content.style.marginLeft = "0";
             } else {
                 sidebar.style.transform = "translateX(0)";

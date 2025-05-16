@@ -1,0 +1,860 @@
+using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using JwtAuthDemo.Models;
+
+namespace JwtAuthDemo.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+
+        public HomeController(ILogger<HomeController> logger)
+        {
+            _logger = logger;
+        }
+
+        public IActionResult Index()
+        {
+            // Retrieve username from session
+            var username = HttpContext.Session.GetString("Username");
+
+            // Pass username to the view
+            ViewBag.Username = username;
+
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public IActionResult About()
+        {
+            return View();
+        }
+
+    }
+}
+
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace JwtAuthDemo.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly Appdatacontext _context;
+        private readonly JwtService _jwtService;
+
+        public AccountController(Appdatacontext context, JwtService jwtService)
+        {
+            _context = context;
+            _jwtService = jwtService;
+        }
+
+        [HttpGet]
+        public IActionResult Register() => View();
+
+        [HttpPost]
+        [HttpPost]
+public async Task<IActionResult> Register([FromBody] RegisterModel model)
+{
+    if (model == null)
+        return Json(new { success = false, message = "Invalid data provided." });
+
+    var userExists = await _context.Users.AnyAsync(u => u.Username == model.Username);
+    if (userExists)
+        return Json(new { success = false, message = "Username already exists. Choose a different one." });
+
+    var user = new User
+    {
+        Username = model.Username,
+        PasswordHash = HashPassword(model.Password),
+        FirstName = model.FirstName,
+        LastName = model.LastName,
+        Address = model.Address,
+        Phone = model.Phone
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    return Json(new { success = true });
+}
+
+
+        [HttpGet]
+        public IActionResult Login() => View();
+
+        [HttpPost]
+public async Task<IActionResult> Login(string username, string password, bool rememberMe)
+{
+    var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+    
+    if (user == null || user.PasswordHash != HashPassword(password))
+    {
+        return Json(new { success = false, message = "Wrong Username or Password" });
+    }
+
+    var token = _jwtService.GenerateToken(user.Username);
+
+    HttpContext.Session.SetString("AuthToken", token);
+    HttpContext.Session.SetString("Username", user.Username);
+
+    if (rememberMe)
+    {
+        HttpContext.Session.SetInt32("RememberMe", 1);
+        HttpContext.Session.SetString("SessionTimeout", "7Days");
+    }
+    else
+    {
+        HttpContext.Session.SetInt32("RememberMe", 0);
+        HttpContext.Session.SetString("SessionTimeout", "30Minutes");
+    }
+
+    return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
+}
+
+
+        public IActionResult Profile()
+        {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            var user = _context.Users.FirstOrDefault(u => u.Username == HttpContext.Session.GetString("Username"));
+            if (user != null)
+            {
+                HttpContext.Session.SetString("FirstName", user.FirstName);
+                HttpContext.Session.SetString("LastName", user.LastName);
+                HttpContext.Session.SetString("Address", user.Address);
+                HttpContext.Session.SetString("Phone", user.Phone);
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateModel model)
+        {
+            if (model == null)
+                return Json(new { success = false, message = "Invalid data." });
+
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrEmpty(username))
+                return Json(new { success = false, message = "User not authenticated." });
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+
+            // Update user data in database
+            user.FirstName = model.FirstName;
+            user.LastName = model.LastName;
+            user.Address = model.Address;
+            user.Phone = model.Phone;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // Update session data
+            HttpContext.Session.SetString("FirstName", model.FirstName);
+            HttpContext.Session.SetString("LastName", model.LastName);
+            HttpContext.Session.SetString("Address", model.Address);
+            HttpContext.Session.SetString("Phone", model.Phone);
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login");
+        }
+
+        private string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(bytes);
+        }
+    }
+
+    public class ProfileUpdateModel
+    {
+        public required string FirstName { get; set; }
+        public required string LastName { get; set; }
+        public required string Address { get; set; }
+        public required string Phone { get; set; }
+    }
+}
+
+using JwtAuthDemo.Helpers;
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Models.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace JwtAuthDemo.Controllers
+{
+    public class EmployeeController : Controller
+    {
+        private EmployeeHelper _employeeHelper;
+
+        public EmployeeController(Appdatacontext appdatacontext)
+        {
+            _employeeHelper = new EmployeeHelper(appdatacontext);
+        }
+
+        // GET: EmployeeController
+        public async Task<ActionResult> IndexAsync()
+        {
+            return View(await _employeeHelper.Get());
+        }
+        
+        // GET: EmployeeController/Details/5
+        public async Task<ActionResult> DetailsAsync(int id)
+        {
+            var employee = await _employeeHelper.Get(id);
+            return View(employee);
+        }
+
+        // GET: EmployeeController/Create
+        public ActionResult Create()
+        {
+            return View();
+        }
+        public async Task<JsonResult> SaveEmployeeAsync(Employee model)
+        {
+            var response = await _employeeHelper.Save(model);
+
+
+            return Json(response);
+        }
+
+        // POST: EmployeeController/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> CreateAsync(Employee collection)
+        {
+            try
+            {
+                var response = await _employeeHelper.Save(collection);
+                return RedirectToAction("Confirmation", new { message = "Employee created successfully!" });
+                
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        // GET: EmployeeController/Edit/5
+        public async Task<ActionResult> EditAsync(int id)
+        {
+            return View(await _employeeHelper.Get(id));
+        }
+
+        // POST: EmployeeController/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> EditAsync(Employee model , int id)
+        {
+            try
+            {
+                var response = await _employeeHelper.Update(model, id);
+                return RedirectToAction("Confirmation", new { message = "Employee Updated successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        // GET: EmployeeController/Delete/5
+        public ActionResult Delete(int id)
+        {
+            return View(_employeeHelper.Get(id));
+        }
+
+        // POST: EmployeeController/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Delete(int id, Employee collection)
+        {
+            try
+            {
+                var response = _employeeHelper.Delete(id);
+                return RedirectToAction("Confirmation", new { message = "Employee Deleted successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        public ActionResult Confirmation(string  message)
+        {
+            return View((object)message);
+        }
+
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Models.Entities;
+using JwtAuthDemo.Models.Info;
+
+namespace JwtAuthDemo.Controllers
+{
+    public class CertificationsAndLicensesController : Controller
+    {
+        private readonly Appdatacontext _appdatacontext;
+
+        public CertificationsAndLicensesController(Appdatacontext context)
+        {
+            _appdatacontext = context;
+
+        }
+        public ActionResult Droptable(CertificationsLicensces model)
+        {
+
+            return View();
+
+        }
+
+        // GET: Certificationslicenses
+        public ActionResult Index()
+        {
+            return View(_appdatacontext.CertificationsLicenses.ToList());
+        }
+
+        // GET: Certificationslicenses/Details/5
+        public ActionResult Details(int id)
+        {
+            var certificate = _appdatacontext.CertificationsLicenses.First(a=>a.Id == id);
+            return View(certificate);
+        }
+
+        // GET: Certificationslicenses/Create
+        public ActionResult Create()
+        {
+            var dto = new CertificationsAndLisencesDto();
+            dto.Employees = _appdatacontext.Employee.ToList();
+            dto.CertificationsAndlicenses = new CertificationsLicensces();
+            dto.CertificationsAndlicenses.Employee = new Employee();
+
+            return View(dto);
+        }
+
+        public JsonResult Save(CertificationsLicensces model)
+        {
+            _appdatacontext.CertificationsLicenses.Add(model);
+            var response = _appdatacontext.SaveChanges();
+
+            return Json(model);
+        }
+
+        // POST: CertificationsAndlicenses/Create
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost("CreateCertificationsAndlicenses")]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateCertificationsAndlicenses(CertificationsAndLisencesDto CertificationsAndlicensesDto)
+        {
+            if (CertificationsAndlicensesDto.CertificationsAndlicenses.Id == 0)
+            {
+                // Handle cases where EmployeeId is null
+                // You can either leave it null or set a default EmployeeId if needed
+                CertificationsAndlicensesDto.CertificationsAndlicenses.Employee
+                = _appdatacontext.Employee.Where(a => a.Id
+                == CertificationsAndlicensesDto.CertificationsAndlicenses.Id).FirstOrDefault();
+            }
+
+
+            var certificate = new CertificationsLicensces
+            {
+                Id = 0,
+                PRCLicense = CertificationsAndlicensesDto.CertificationsAndlicenses.PRCLicense,
+                StartDate = CertificationsAndlicensesDto.CertificationsAndlicenses.StartDate,
+                OtherCertification = CertificationsAndlicensesDto.CertificationsAndlicenses.OtherCertification
+
+            };
+
+            // Save to the database
+            _appdatacontext.CertificationsLicenses.Add(certificate);
+            _appdatacontext.SaveChanges();
+
+            // Redirect to the index or success page
+            return RedirectToAction(nameof(Index));
+
+
+            // Reload employees in case of validation errors
+            CertificationsAndlicensesDto.Employees = _appdatacontext.Employee.ToList();
+            return View(CertificationsAndlicensesDto);
+
+        }
+
+        // GET: CertificationsAndlicenses/Edit/5
+        public ActionResult Edit(int id)
+        {
+            return View(_appdatacontext.CertificationsLicenses.First(a=>a.Id == id));
+        }
+
+        // POST: CertificationsAndlicenses/Edit/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditAsync(CertificationsLicensces model, int id)
+        {
+            try
+            {
+                var certLicense = _appdatacontext.CertificationsLicenses.FirstOrDefault(a => a.Id == id);
+                if (certLicense == null)
+                    return NotFound();
+
+                certLicense = model;
+                await _appdatacontext.SaveChangesAsync();
+
+                return RedirectToAction("Confirmation", new { message = "Data Updated successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        // GET: CertificationsAndlicenses/Delete/5
+        public ActionResult Delete(int id)
+        {
+            return View(_appdatacontext.CertificationsLicenses.First(a=>a.Id == id));
+        }
+
+        // POST: EmployeeController/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Delete(int id, CertificationsLicensces collection)
+        {
+            try
+            {
+                var cert = _appdatacontext.CertificationsLicenses.FirstOrDefault(a => a.Id == id);
+                if (cert == null)
+                    return NotFound();
+                var response = _appdatacontext.CertificationsLicenses.Remove(cert);
+                return RedirectToAction("Confirmation", new { message = "Data Deleted successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+        public ActionResult Confirmation(string message)
+        {
+            return View((object)message);
+        }
+
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Models.Entities;
+using JwtAuthDemo.Helpers;
+using JwtAuthDemo.Models.Info;
+
+
+namespace JwtAuthDemo.Controllers
+{
+    public class EducationalInformationsController : Controller
+    {
+        private readonly EducationalInformationHelper _context;
+        private readonly Appdatacontext _appdatacontext;
+
+        public EducationalInformationsController(Appdatacontext context)
+        {
+            _context = new EducationalInformationHelper(context);
+            _appdatacontext = context;
+        }
+
+        public ActionResult Droptable(Educationalbackground model)
+        {
+
+            return View();
+
+        }
+
+
+        // GET: EmployeeController
+        public async Task<ActionResult> IndexAsync(int id)
+        {
+            return View(await _context.Get(id));
+        }
+
+        // GET: EmployeeController/Details/5
+        public async Task<ActionResult> DetailsAsync(int id)
+        {
+            var employee = await _context.Get(id);
+            return View(employee.FirstOrDefault());
+        }
+
+        // GET: EmployeeController/Create
+        public ActionResult Create()
+        {
+            var dto = new EducationalbackgroundDto();
+            dto.Employees = _appdatacontext.Employee.ToList();
+            dto.Educationalbackground = new Educationalbackground();
+            dto.Educationalbackground.Employee = new Employee();
+            return View(dto);
+        }
+        public async Task<JsonResult> SaveEmployeeAsync(Educationalbackground model)
+        {
+            var response = await _context.Save(model);
+
+            return Json(response);
+        }
+
+        // POST: EmployeeController/Create
+        [HttpPost("CreateEducationalInformation")]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateEducationalInformation(EducationalbackgroundDto educationalInformationDto)
+        {
+            educationalInformationDto.Educationalbackground.Employee
+                = _appdatacontext.Employee.Where(a => a.Id
+                == educationalInformationDto.Educationalbackground.Employee.Id).FirstOrDefault();
+            // Map DTO to the actual model entity
+            var educationalInformation = new Educationalbackground
+            {
+                Id = 0,
+                ElementarySchool = educationalInformationDto.Educationalbackground.ElementarySchool,
+                ElementaryYearAttended = educationalInformationDto.Educationalbackground.ElementaryYearAttended,
+                HighSchool = educationalInformationDto.Educationalbackground.HighSchool,
+                HighSchoolYearAttended = educationalInformationDto.Educationalbackground.HighSchoolYearAttended,
+                CollegeSchool = educationalInformationDto.Educationalbackground.CollegeSchool,
+                CollegeYearAttended2 = educationalInformationDto.Educationalbackground.CollegeYearAttended2,
+                DegreeReceived = educationalInformationDto.Educationalbackground.DegreeReceived,
+                SpecialSkills = educationalInformationDto.Educationalbackground.SpecialSkills,
+                Others = educationalInformationDto.Educationalbackground.Others,
+                Employee = educationalInformationDto.Educationalbackground.Employee
+            };
+
+            // Save to the database
+            _appdatacontext.Educationalbackground.Add(educationalInformation);
+            _appdatacontext.SaveChanges();
+
+            // Redirect to the index or success page
+            return RedirectToAction(nameof(IndexAsync));
+
+
+            // Reload employees in case of validation errors
+            educationalInformationDto.Employees = _appdatacontext.Employee.ToList();
+            return View(educationalInformationDto);
+        }
+
+        // GET: EmployeeController/Edit/5
+        public IActionResult Edit(EducationalbackgroundDto educationalInformationDto)
+        {
+            educationalInformationDto.Educationalbackground.Employee
+               = _appdatacontext.Employee.Where(a => a.Id
+               == educationalInformationDto.Educationalbackground.Employee.Id).FirstOrDefault();
+            // Map DTO to the actual model entity
+            var educationalInformation = new Educationalbackground
+            {
+                Id = 1,
+                ElementarySchool = educationalInformationDto.Educationalbackground.ElementarySchool,
+                ElementaryYearAttended = educationalInformationDto.Educationalbackground.ElementaryYearAttended,
+                HighSchool = educationalInformationDto.Educationalbackground.HighSchool,
+                HighSchoolYearAttended = educationalInformationDto.Educationalbackground.HighSchoolYearAttended,
+                CollegeSchool = educationalInformationDto.Educationalbackground.CollegeSchool,
+                CollegeYearAttended2 = educationalInformationDto.Educationalbackground.CollegeYearAttended2,
+                DegreeReceived = educationalInformationDto.Educationalbackground.DegreeReceived,
+                SpecialSkills = educationalInformationDto.Educationalbackground.SpecialSkills,
+                Others = educationalInformationDto.Educationalbackground.Others,
+                Employee = educationalInformationDto.Educationalbackground.Employee
+            };
+
+            // Save to the database
+            _appdatacontext.Educationalbackground.Add(educationalInformation);
+            _appdatacontext.SaveChanges();
+
+            // Redirect to the index or success page
+            return RedirectToAction(nameof(IndexAsync));
+
+
+            // Reload employees in case of validation errors
+            educationalInformationDto.Employees = _appdatacontext.Employee.ToList();
+            return View(educationalInformationDto);
+        }
+
+        // POST: EmployeeController/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Edit(Educationalbackground model, int id)
+        {
+            try
+            {
+                var response = _context.Update(model, id);
+                return RedirectToAction("Confirmation", new { message = "Employee Updated successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        // GET: EmployeeController/Delete/5
+        public async Task<ActionResult> DeleteAsync(int id)
+        {
+            return View((await _context.Get(id)).FirstOrDefault());
+        }
+
+        // POST: EmployeeController/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Delete(int id, Employee collection)
+        {
+            try
+            {
+                var response = _context.Delete(id);
+                return RedirectToAction("Confirmation", new { message = "Data Deleted successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        public ActionResult Confirmation(string message)
+        {
+            return View((object)message);
+        }
+
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using JwtAuthDemo.Models;
+using JwtAuthDemo.Models.Info;
+using JwtAuthDemo.Models.Entities;
+using JwtAuthDemo.Helpers;
+
+
+namespace JwtAuthDemo.Controllers
+{
+    public class PersonalInfomationController : Controller
+    {
+        private readonly PersonalInformationsHelper _context;
+        private Appdatacontext _appdatacontext;
+
+        public PersonalInfomationController(Appdatacontext context)
+        {
+            _context = new PersonalInformationsHelper(context);
+            _appdatacontext = context;
+        }
+
+        public ActionResult Droptable(PersonalInformation model)
+        {
+            return View(model);
+        }
+
+
+        // GET: PersonalInfomationController
+        public ActionResult Index()
+        {
+            return View(_context.Get());
+        }
+
+        // GET: PersonalInfomation/Details/5
+        public ActionResult Details(int id)
+        {
+            var personal = _context.Get(id);
+            return View(personal);
+        }
+
+        // GET: PersonalInfomation/Create
+        public ActionResult Create()
+        {
+            var dto = new PersonalInfomationDto();
+            dto.Employees = _appdatacontext.Employee.ToList();
+            dto.PersonalInfomation = new PersonalInformation();
+            dto.PersonalInfomation.Employee = new Employee();
+            return View(dto);
+        }
+        public async Task<JsonResult> SaveEmployeeAsync(PersonalInformation model)
+        {
+            var response = await _context.Save(model);
+
+
+            return Json(response);
+        }
+
+        // POST: EmployeeController/Create
+        [HttpPost("CreatePersonalInfomation")]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreatePersonalInfomation(PersonalInfomationDto personalInfomationDto)
+        {
+            personalInfomationDto.PersonalInfomation.Employee
+                = _appdatacontext.Employee.Where(a => a.Id
+                == personalInfomationDto.PersonalInfomation.Id).FirstOrDefault();
+            // Map DTO to the actual model entity
+            var personal = new PersonalInformation
+            {
+                Id = 0,
+                PositionDesired = personalInfomationDto.PersonalInfomation.PositionDesired,
+                DateApplied = personalInfomationDto.PersonalInfomation.DateApplied,
+                LastName = personalInfomationDto.PersonalInfomation.LastName,
+                FirstName = personalInfomationDto.PersonalInfomation.FirstName,
+                MiddleName = personalInfomationDto.PersonalInfomation.MiddleName,
+                Sex = personalInfomationDto.PersonalInfomation.Sex,
+                BirthDate = personalInfomationDto.PersonalInfomation.BirthDate,
+                BirthPlace = personalInfomationDto.PersonalInfomation.BirthPlace,
+                EmailAddress = personalInfomationDto.PersonalInfomation.EmailAddress,
+                PhoneNumber = personalInfomationDto.PersonalInfomation.PhoneNumber,
+                CivilStatus = personalInfomationDto.PersonalInfomation.CivilStatus,
+                Religion = personalInfomationDto.PersonalInfomation.Religion,
+                Citizenship = personalInfomationDto.PersonalInfomation.Citizenship,
+                PresentAddress = personalInfomationDto.PersonalInfomation.PresentAddress,
+                PermanentAddress = personalInfomationDto.PersonalInfomation.PermanentAddress,
+                Height = personalInfomationDto.PersonalInfomation.Height,
+                Weight = personalInfomationDto.PersonalInfomation.Weight,
+                BloodType = personalInfomationDto.PersonalInfomation.BloodType,
+                FathersOccupation = personalInfomationDto.PersonalInfomation.FathersOccupation,
+                MothersName = personalInfomationDto.PersonalInfomation.MothersName,
+                MothersOccupation = personalInfomationDto.PersonalInfomation.MothersOccupation,
+                PersonContactedInCaseOfEmergency = personalInfomationDto.PersonalInfomation.PersonContactedInCaseOfEmergency,
+                Relationship = personalInfomationDto.PersonalInfomation.Relationship,
+                ContactNumber = personalInfomationDto.PersonalInfomation.ContactNumber
+            };
+
+            // Save to the database
+            _appdatacontext.PersonalInformation.Add(personal);
+            _appdatacontext.SaveChanges();
+
+            // Redirect to the index or success page
+            return RedirectToAction(nameof(Index));
+
+
+            // Reload employees in case of validation errors
+            personalInfomationDto.Employees = _appdatacontext.Employee.ToList();
+            return View(personalInfomationDto);
+        }
+
+        // GET: PersonalInfomation/Edit/5
+        public ActionResult Edit(int id)
+        {
+            return View(_context.Get(id));
+        }
+
+        // POST: PersonalInfomation/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Edit(PersonalInformation model, int id)
+        {
+            try
+            {
+                var response = _context.Update(model, id);
+                return RedirectToAction("Confirmation", new { message = "Data Updated successfully!" });
+
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        // GET: PerosonalInfomations/Delete/5
+        public ActionResult Delete(int id)
+        {
+            return View(_context.Get(id));
+        }
+
+        // POST: PersonalInfomation/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Delete(int id, PersonalInformation collection)
+        {
+            try
+            {
+                var response = _context.Delete(id);
+                return RedirectToAction("Confirmation", new { message = "Data Deleted successfully!" });
+            }
+            catch
+            {
+                return View();
+            }
+        }
+
+        public ActionResult Confirmation(string message)
+        {
+            return View((object)message);
+        }
+    }
+}
+
+using Microsoft.AspNetCore.Mvc;
+
+public class TransactionController : Controller
+{
+    public IActionResult Transaction1()
+    {
+        ViewData["Title"] = "Transaction 1";
+        return View();
+    }
+
+    public IActionResult Transaction2()
+    {
+        ViewData["Title"] = "Transaction 2";
+        return View();
+    }
+
+    public IActionResult Transaction3()
+    {
+        ViewData["Title"] = "Transaction 3";
+        return View();
+    }
+}
+
+using JwtAuthDemo.Models.Entities;
+using JwtAuthDemo.Models.Info;
+
+namespace JwtAuthDemo.Models
+{
+    public class CertificationsAndLisencesDto
+    {
+        public CertificationsLicensces CertificationsAndlicenses { get; set; }
+        public List<Employee> Employees { get; set; }
+    }
+
+}

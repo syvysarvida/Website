@@ -89,3 +89,33 @@
         });
     </script>
 }
+
+<style>
+    .transparent-input {
+        background-color: transparent;
+        color: white; /* Text color when typing */
+        border: 1px solid #ccc;
+    }
+
+    .transparent-input::placeholder {
+        color: #ccc; /* Placeholder color */
+    }
+
+    .transparent-input:focus {
+        background-color: transparent;
+        color: white;
+        border-color: #66afe9;
+        outline: none;
+        box-shadow: none;
+    }
+
+    .card {
+        background-color: #1e1e1e; /* Optional: dark card background for contrast */
+        border: none;
+    }
+
+    .form-label {
+        color: white; /* Optional: make form labels white */
+    }
+</style>
+
